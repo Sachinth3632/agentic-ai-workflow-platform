@@ -1,0 +1,13 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+.vscode/
+.env
+*.db
+*.sqlite
+*.sqlite3
+data/vector_store/
+.pytest_cache/
