@@ -2,22 +2,35 @@ from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_openai import AzureOpenAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from backend.app.config import settings
 
 
 VECTOR_STORE_PATH = Path("data/vector_store")
 DOCUMENT_PATH = Path("data/documents")
 
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+
+def get_embeddings():
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL
+    )
+
 
 def create_vector_store():
+
     documents = []
 
     for pdf_file in DOCUMENT_PATH.glob("*.pdf"):
-        loader = PyPDFLoader(str(pdf_file))
-        documents.extend(loader.load())
+
+        loader = PyPDFLoader(
+            str(pdf_file)
+        )
+
+        documents.extend(
+            loader.load()
+        )
 
     if not documents:
         raise ValueError(
@@ -29,14 +42,11 @@ def create_vector_store():
         chunk_overlap=200
     )
 
-    chunks = splitter.split_documents(documents)
-
-    embeddings = AzureOpenAIEmbeddings(
-        azure_deployment=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-        api_key=settings.AZURE_OPENAI_API_KEY,
-        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-        api_version=settings.AZURE_OPENAI_API_VERSION
+    chunks = splitter.split_documents(
+        documents
     )
+
+    embeddings = get_embeddings()
 
     vector_store = FAISS.from_documents(
         chunks,
@@ -56,12 +66,8 @@ def create_vector_store():
 
 
 def load_vector_store():
-    embeddings = AzureOpenAIEmbeddings(
-        azure_deployment=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-        api_key=settings.AZURE_OPENAI_API_KEY,
-        azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-        api_version=settings.AZURE_OPENAI_API_VERSION
-    )
+
+    embeddings = get_embeddings()
 
     return FAISS.load_local(
         str(VECTOR_STORE_PATH),
@@ -71,6 +77,7 @@ def load_vector_store():
 
 
 def search_documents(query: str) -> str:
+
     vector_store = load_vector_store()
 
     documents = vector_store.similarity_search(
@@ -84,6 +91,7 @@ def search_documents(query: str) -> str:
     results = []
 
     for document in documents:
+
         source = document.metadata.get(
             "source",
             "unknown"
