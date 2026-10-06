@@ -13,3 +13,4 @@ sqlalchemy
 faiss-cpu
 pypdf
 requests
+reportlab
